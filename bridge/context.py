@@ -10,6 +10,8 @@ class ContextType(Enum):
     FILE = 4  # 文件信息
     VIDEO = 5  # 视频信息
     SHARING = 6  # 分享信息
+    LOCATION = 7  # 位置信息
+    LINK = 8  # 链接信息
 
     IMAGE_CREATE = 10  # 创建图片命令
     ACCEPT_FRIEND = 19 # 同意好友请求

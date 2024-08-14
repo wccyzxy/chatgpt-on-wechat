@@ -24,6 +24,7 @@ from common.utils import convert_webp_to_png
 from config import conf, get_appdata_dir
 from lib import itchat
 from lib.itchat.content import *
+from bot.summarize.mongo import MongoDB
 
 
 @itchat.msg_register([TEXT, VOICE, PICTURE, NOTE, ATTACHMENT, SHARING])
@@ -111,6 +112,7 @@ class WechatChannel(ChatChannel):
         super().__init__()
         self.receivedMsgs = ExpiredDict(conf().get("expires_in_seconds", 3600))
         self.auto_login_times = 0
+        self.mongo = MongoDB()
 
     def startup(self):
         try:
@@ -196,8 +198,8 @@ class WechatChannel(ChatChannel):
         elif cmsg.ctype in [ContextType.JOIN_GROUP, ContextType.PATPAT, ContextType.ACCEPT_FRIEND, ContextType.EXIT_GROUP]:
             logger.debug("[WX]receive note msg: {}".format(cmsg.content))
         elif cmsg.ctype == ContextType.TEXT:
-            # logger.debug("[WX]receive group msg: {}, cmsg={}".format(json.dumps(cmsg._rawmsg, ensure_ascii=False), cmsg))
-            pass
+            # self.mongo.insert_one(cmsg.other_user_nickname, {"content": cmsg.content, "type": f'{cmsg.ctype}', "msgId": cmsg.msg_id, "user": cmsg.actual_user_nickname})
+            logger.debug("[WX]receive group msg: {}, cmsg={}".format(json.dumps(cmsg._rawmsg, ensure_ascii=False), cmsg))
         elif cmsg.ctype == ContextType.FILE:
             logger.debug(f"[WX]receive attachment msg, file_name={cmsg.content}")
         else:

@@ -7,4 +7,5 @@ chardet>=5.1.0
 Pillow
 pre-commit
 web.py
+pymongo
 linkai>=0.0.6.0
