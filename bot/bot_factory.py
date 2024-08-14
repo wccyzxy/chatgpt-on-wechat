@@ -68,5 +68,21 @@ def create_bot(bot_type):
         from bot.minimax.minimax_bot import MinimaxBot
         return MinimaxBot()
 
+    elif bot_type == const.ECHO:
+        from bot.echo.echo_bot import ECHOBot
+        return ECHOBot()
+
+    elif bot_type == const.RAG:
+        from bot.rag.rag_bot import RAGBot
+        return RAGBot()
+
+    elif bot_type == const.SUMMARIZE:
+        from bot.summarize.summarize_bot import SUMMARIZEBot
+        return SUMMARIZEBot()
+
+    elif bot_type == const.COZE:
+        from bot.coze.coze_bot import COZEBot
+        return COZEBot()
+
 
     raise RuntimeError

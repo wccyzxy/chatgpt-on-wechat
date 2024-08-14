@@ -1,6 +1,8 @@
+import uuid
+
 from bot.bot_factory import create_bot
 from bridge.context import Context
-from bridge.reply import Reply
+from bridge.reply import Reply, ReplyType
 from common import const
 from common.log import logger
 from common.singleton import singleton
@@ -13,7 +15,7 @@ from voice.factory import create_voice
 class Bridge(object):
     def __init__(self):
         self.btype = {
-            "chat": const.CHATGPT,
+            "chat": conf().get("chat_bot", "chatGPT"),
             "voice_to_text": conf().get("voice_to_text", "openai"),
             "text_to_voice": conf().get("text_to_voice", "google"),
             "translate": conf().get("translate", "baidu"),
@@ -51,6 +53,8 @@ class Bridge(object):
 
             if model_type in ["abab6.5-chat"]:
                 self.btype["chat"] = const.MiniMax
+            if model_type in [const.COZE]:
+                self.btype["chat"] = const.COZE
 
             if conf().get("use_linkai") and conf().get("linkai_api_key"):
                 self.btype["chat"] = const.LINKAI

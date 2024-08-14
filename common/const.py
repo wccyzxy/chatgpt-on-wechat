@@ -15,6 +15,11 @@ GEMINI = "gemini"  # gemini-1.0-pro
 ZHIPU_AI = "glm-4"
 MOONSHOT = "moonshot"
 MiniMax = "minimax"
+ECHO = "echo"
+DIFY = "dify"
+RAG = "rag"
+SUMMARIZE = "summarize"
+COZE = "coze"
 
 
 # model

@@ -22,7 +22,11 @@ available_setting = {
     "use_azure_chatgpt": False,  # 是否使用azure的chatgpt
     "azure_deployment_id": "",  # azure 模型部署名称
     "azure_api_version": "",  # azure api版本
+    # coze bot
+    "coze_bot_id": "",
+    "coze_token": "",  # coze token
     # Bot触发配置
+    "chat_bot": "chatGPT",  # 聊天机器人类型，目前支持 chatGPT, zhipuai, openai, azure, baidu, qwen, gpt4, gpt4-vision, gpt4-vision-preview, gpt4-vision-preview-preview, gpt4-vision-preview-preview-preview, gpt4-vision-preview-preview-preview-preview, gpt4-vision-preview-preview-preview-preview-preview, gpt4-vision-preview-preview-preview-preview-pre
     "single_chat_prefix": ["bot", "@bot"],  # 私聊时文本需要包含该前缀才能触发机器人回复
     "single_chat_reply_prefix": "[bot] ",  # 私聊时自动回复的前缀，用于区分真人
     "single_chat_reply_suffix": "",  # 私聊时自动回复的后缀，\n 可以换行
@@ -140,12 +144,16 @@ available_setting = {
     "wechatcomapp_secret": "",  # 企业微信app的secret
     "wechatcomapp_agent_id": "",  # 企业微信app的agent_id
     "wechatcomapp_aes_key": "",  # 企业微信app的aes_key
+    # wechatcomkf的配置
+    "wechatcomkf_id": "",  # 企业微信客服id
+
     # 飞书配置
     "feishu_port": 80,  # 飞书bot监听端口
     "feishu_app_id": "",  # 飞书机器人应用APP Id
     "feishu_app_secret": "",  # 飞书机器人APP secret
     "feishu_token": "",  # 飞书 verification token
     "feishu_bot_name": "",  # 飞书机器人的名字
+    
     # 钉钉配置
     "dingtalk_client_id": "",  # 钉钉机器人Client ID 
     "dingtalk_client_secret": "",  # 钉钉机器人Client Secret
