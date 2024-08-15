@@ -220,6 +220,9 @@ class Config(dict):
         except Exception as e:
             raise e
 
+    def set(self, key, value):
+        self[key] = value
+
     # Make sure to return a dictionary to ensure atomic
     def get_user_data(self, user) -> dict:
         if self.user_datas.get(user) is None:
@@ -362,4 +365,4 @@ def pconf(plugin_name: str) -> dict:
 
 
 # 全局配置，用于存放全局生效的状态
-global_config = {"admin_users": []}
+global_config = {"admin_users": [], "super_admin_users": []}

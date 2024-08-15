@@ -131,11 +131,124 @@ ADMIN_COMMANDS = {
         "alias": ["debug", "调试模式", "DEBUG"],
         "desc": "开启机器调试日志",
     },
+    "setconf": {
+        "alias": ["setconf", "修改配置"],
+        "args": ["配置名", "配置值"],
+        "desc": "修改配置",
+    },
+    "getconf": {
+        "alias": ["getconf", "查看配置"],
+        "args": ["配置名"],
+        "desc": "查看配置",
+    },
+    "addgroupnamewhitelist": {
+        "alias": ["addgroupnamewhitelist", "添加群组白名单"],
+        "args": ["群组名"],
+        "desc": "添加群组白名单",
+    },
+    "delgroupnamewhitelist": {
+        "alias": ["delgroupnamewhitelist", "删除群组白名单"],
+        "args": ["群组名"],
+        "desc": "删除群组白名单",
+    }
 }
 
+SUPER_ADMIN_COMMANDS = {
+    "setadminp": {
+        "alias": ["setadminp", "修改管理人员认证密码"],
+        "desc": "修改管理人员认证密码",
+    },
+    "setsuperp": {
+        "alias": ["setsuperp", "修改超级管理人员认证密码"],
+        "desc": "修改超级管理人员认证密码",
+    },
+    "resume": {
+        "alias": ["resume", "恢复服务"],
+        "desc": "恢复服务",
+    },
+    "stop": {
+        "alias": ["stop", "暂停服务"],
+        "desc": "暂停服务",
+    },
+    "reconf": {
+        "alias": ["reconf", "重载配置"],
+        "desc": "重载配置(不包含插件配置)",
+    },
+    "resetall": {
+        "alias": ["resetall", "重置所有会话"],
+        "desc": "重置所有会话",
+    },
+    "scanp": {
+        "alias": ["scanp", "扫描插件"],
+        "desc": "扫描插件目录是否有新插件",
+    },
+    "plist": {
+        "alias": ["plist", "插件"],
+        "desc": "打印当前插件列表",
+    },
+    "setpri": {
+        "alias": ["setpri", "设置插件优先级"],
+        "args": ["插件名", "优先级"],
+        "desc": "设置指定插件的优先级，越大越优先",
+    },
+    "reloadp": {
+        "alias": ["reloadp", "重载插件"],
+        "args": ["插件名"],
+        "desc": "重载指定插件配置",
+    },
+    "enablep": {
+        "alias": ["enablep", "启用插件"],
+        "args": ["插件名"],
+        "desc": "启用指定插件",
+    },
+    "disablep": {
+        "alias": ["disablep", "禁用插件"],
+        "args": ["插件名"],
+        "desc": "禁用指定插件",
+    },
+    "installp": {
+        "alias": ["installp", "安装插件"],
+        "args": ["仓库地址或插件名"],
+        "desc": "安装指定插件",
+    },
+    "uninstallp": {
+        "alias": ["uninstallp", "卸载插件"],
+        "args": ["插件名"],
+        "desc": "卸载指定插件",
+    },
+    "updatep": {
+        "alias": ["updatep", "更新插件"],
+        "args": ["插件名"],
+        "desc": "更新指定插件",
+    },
+    "debug": {
+        "alias": ["debug", "调试模式", "DEBUG"],
+        "desc": "开启机器调试日志",
+    },
+    "setconf": {
+        "alias": ["setconf", "修改配置"],
+        "args": ["配置名", "配置值"],
+        "desc": "修改配置",
+    },
+    "getconf": {
+        "alias": ["getconf", "查看配置"],
+        "args": ["配置名"],
+        "desc": "查看配置",
+    },
+    "addgroupnamewhitelist": {
+        "alias": ["addgroupnamewhitelist", "添加群组白名单"],
+        "args": ["群组名"],
+        "desc": "添加群组白名单",
+    },
+    "delgroupnamewhitelist": {
+        "alias": ["delgroupnamewhitelist", "删除群组白名单"],
+        "args": ["群组名"],
+        "desc": "删除群组白名单",
+    }
+}
 
 # 定义帮助函数
-def get_help_text(isadmin, isgroup):
+def get_help_text(isadmin, isgroup, issuperadmin):
     help_text = "通用指令\n"
     for cmd, info in COMMANDS.items():
         if cmd in ["auth", "set_openai_api_key", "reset_openai_api_key", "set_gpt_model", "reset_gpt_model", "gpt_model"]:  # 不显示帮助指令
@@ -161,6 +274,16 @@ def get_help_text(isadmin, isgroup):
     if ADMIN_COMMANDS and isadmin:
         help_text += "\n\n管理员指令：\n"
         for cmd, info in ADMIN_COMMANDS.items():
+            alias = ["#" + a for a in info["alias"][:1]]
+            help_text += f"{','.join(alias)} "
+            if "args" in info:
+                args = [a for a in info["args"]]
+                help_text += f"{' '.join(args)}"
+            help_text += f": {info['desc']}\n"
+
+    if SUPER_ADMIN_COMMANDS and issuperadmin:
+        help_text += "\n\n超级管理员指令：\n"
+        for cmd, info in SUPER_ADMIN_COMMANDS.items():
             alias = ["#" + a for a in info["alias"][:1]]
             help_text += f"{','.join(alias)} "
             if "args" in info:
@@ -203,6 +326,8 @@ class Godcmd(Plugin):
 
         self.password = gconf["password"]
         self.admin_users = gconf["admin_users"]  # 预存的管理员账号，这些账号不需要认证。itchat的用户名每次都会变，不可用
+        self.super_password = gconf["super_password"]
+        self.super_admin_users = gconf["super_admin_users"]
         global_config["admin_users"] = self.admin_users
         self.isrunning = True  # 机器人是否运行中
 
@@ -238,17 +363,20 @@ class Godcmd(Plugin):
             cmd = command_parts[0]
             args = command_parts[1:]
             isadmin = False
+            isSuperAdmin = False
             if user in self.admin_users:
                 isadmin = True
+            if user in self.super_admin_users:
+                isSuperAdmin = True
             ok = False
             result = "string"
             if any(cmd in info["alias"] for info in COMMANDS.values()):
                 cmd = next(c for c, info in COMMANDS.items() if cmd in info["alias"])
                 if cmd == "auth":
-                    ok, result = self.authenticate(user, args, isadmin, isgroup)
+                    ok, result = self.authenticate(user, args, isadmin, isgroup, isSuperAdmin)
                 elif cmd == "help" or cmd == "helpp":
                     if len(args) == 0:
-                        ok, result = True, get_help_text(isadmin, isgroup)
+                        ok, result = True, get_help_text(isadmin, isgroup, isSuperAdmin)
                     else:
                         # This can replace the helpp command
                         plugins = PluginManager().list_plugins()
@@ -322,7 +450,8 @@ class Godcmd(Plugin):
                     else:
                         ok, result = False, "当前对话机器人不支持重置会话"
                 logger.debug("[Godcmd] command: %s by %s" % (cmd, user))
-            elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()):
+            elif any(cmd in info["alias"] for info in ADMIN_COMMANDS.values()) \
+                    or any(cmd in info["alias"] for info in SUPER_ADMIN_COMMANDS.values()):
                 if isadmin:
                     if isgroup:
                         ok, result = False, "群聊不可执行管理员指令"
@@ -418,7 +547,221 @@ class Godcmd(Plugin):
                                 ok, result = False, "请提供插件名"
                             else:
                                 ok, result = PluginManager().update_plugin(args[0])
+                        elif cmd == "setconf":
+                            if len(args) != 2:
+                                ok, result = False, "请提供配置名和值"
+                            else:
+                                conf_object = ""
+                                try:
+                                    conf_object = json.loads(args[1])
+                                except json.JSONDecodeError:
+                                    conf_object = args[1]
+                                if conf().set(args[0], conf_object):
+                                    ok, result = True, "配置已更新"
+                                else:
+                                    ok, result = False, "配置不存在"
+                        elif cmd == "getconf":
+                            if len(args) > 1:
+                                ok, result = False, "传入参数过多"
+                            else:
+                                if len(args) == 0:
+                                    ok, result = True, "\n".join(conf().keys())
+                                elif args[0] in conf().keys():
+                                    conf_str = ""
+                                    if isinstance(conf().get(args[0]), str):
+                                        conf_str = conf().get(args[0])
+                                    elif isinstance(conf().get(args[0]), dict):
+                                        conf_str = json.dumps(conf().get(args[0]))
+                                    elif isinstance(conf().get(args[0]), list):
+                                        conf_str = json.dumps(conf().get(args[0]))
+                                    else:
+                                        conf_str = str(conf().get(args[0]))
+                                    ok, result = True, conf_str
+                                else:
+                                    ok, result = False, "配置不存在"
+                        elif cmd == "addgroupnamewhitelist":
+                            if len(args) != 1:
+                                ok, result = False, "请提供群组名"
+                            else:
+                                group_white_name_list = conf().get("group_name_white_list")
+                                if args[0] not in group_white_name_list:
+                                    group_white_name_list.append(args[0])
+                                conf().set("group_name_white_list", group_white_name_list)
+                                ok, result = True, "群组名白名单已添加"
+                        elif cmd == "delgroupnamewhitelist":
+                            if len(args) != 1:
+                                ok, result = False, "请提供群组名"
+                            else:
+                                group_white_name_list = conf().get("group_name_white_list")
+                                if args[0] in group_white_name_list:
+                                    group_white_name_list.remove(args[0])
+                                    conf().set("group_name_white_list", group_white_name_list)
+                                    ok, result = True, "群组名白名单已删除"
+                                else:
+                                    ok, result = False, "群组名白名单不存在"
                         logger.debug("[Godcmd] admin command: %s by %s" % (cmd, user))
+                elif isSuperAdmin:
+                    if isgroup:
+                        ok, result = False, "群聊不可执行管理员指令"
+                    else:
+                        cmd = next(c for c, info in SUPER_ADMIN_COMMANDS.items() if cmd in info["alias"])
+                        if cmd == "stop":
+                            self.isrunning = False
+                            ok, result = True, "服务已暂停"
+                        elif cmd == "resume":
+                            self.isrunning = True
+                            ok, result = True, "服务已恢复"
+                        elif cmd == "reconf":
+                            load_config()
+                            ok, result = True, "配置已重载"
+                        elif cmd == "resetall":
+                            if bottype in [const.OPEN_AI, const.CHATGPT, const.CHATGPTONAZURE, const.LINKAI,
+                                           const.BAIDU, const.XUNFEI, const.QWEN, const.GEMINI, const.ZHIPU_AI, const.MOONSHOT]:
+                                channel.cancel_all_session()
+                                bot.sessions.clear_all_session()
+                                ok, result = True, "重置所有会话成功"
+                            else:
+                                ok, result = False, "当前对话机器人不支持重置会话"
+                        elif cmd == "debug":
+                            if logger.getEffectiveLevel() == logging.DEBUG:  # 判断当前日志模式是否DEBUG
+                                logger.setLevel(logging.INFO)
+                                ok, result = True, "DEBUG模式已关闭"
+                            else:
+                                logger.setLevel(logging.DEBUG)
+                                ok, result = True, "DEBUG模式已开启"
+                        elif cmd == "plist":
+                            plugins = PluginManager().list_plugins()
+                            ok = True
+                            result = "插件列表：\n"
+                            for name, plugincls in plugins.items():
+                                result += f"{plugincls.name}_v{plugincls.version} {plugincls.priority} - "
+                                if plugincls.enabled:
+                                    result += "已启用\n"
+                                else:
+                                    result += "未启用\n"
+                        elif cmd == "scanp":
+                            new_plugins = PluginManager().scan_plugins()
+                            ok, result = True, "插件扫描完成"
+                            PluginManager().activate_plugins()
+                            if len(new_plugins) > 0:
+                                result += "\n发现新插件：\n"
+                                result += "\n".join([f"{p.name}_v{p.version}" for p in new_plugins])
+                            else:
+                                result += ", 未发现新插件"
+                        elif cmd == "setpri":
+                            if len(args) != 2:
+                                ok, result = False, "请提供插件名和优先级"
+                            else:
+                                ok = PluginManager().set_plugin_priority(args[0], int(args[1]))
+                                if ok:
+                                    result = "插件" + args[0] + "优先级已设置为" + args[1]
+                                else:
+                                    result = "插件不存在"
+                        elif cmd == "reloadp":
+                            if len(args) != 1:
+                                ok, result = False, "请提供插件名"
+                            else:
+                                ok = PluginManager().reload_plugin(args[0])
+                                if ok:
+                                    result = "插件配置已重载"
+                                else:
+                                    result = "插件不存在"
+                        elif cmd == "enablep":
+                            if len(args) != 1:
+                                ok, result = False, "请提供插件名"
+                            else:
+                                ok, result = PluginManager().enable_plugin(args[0])
+                        elif cmd == "disablep":
+                            if len(args) != 1:
+                                ok, result = False, "请提供插件名"
+                            else:
+                                ok = PluginManager().disable_plugin(args[0])
+                                if ok:
+                                    result = "插件已禁用"
+                                else:
+                                    result = "插件不存在"
+                        elif cmd == "installp":
+                            if len(args) != 1:
+                                ok, result = False, "请提供插件名或.git结尾的仓库地址"
+                            else:
+                                ok, result = PluginManager().install_plugin(args[0])
+                        elif cmd == "uninstallp":
+                            if len(args) != 1:
+                                ok, result = False, "请提供插件名"
+                            else:
+                                ok, result = PluginManager().uninstall_plugin(args[0])
+                        elif cmd == "updatep":
+                            if len(args) != 1:
+                                ok, result = False, "请提供插件名"
+                            else:
+                                ok, result = PluginManager().update_plugin(args[0])
+                        elif cmd == "setconf":
+                            if len(args) != 2:
+                                ok, result = False, "请提供配置名和值"
+                            else:
+                                conf_object = ""
+                                try:
+                                    conf_object = json.loads(args[1])
+                                except json.JSONDecodeError:
+                                    conf_object = args[1]
+                                if conf().set(args[0], conf_object):
+                                    ok, result = True, "配置已更新"
+                                else:
+                                    ok, result = False, "配置不存在"
+                        elif cmd == "getconf":
+                            if len(args) > 1:
+                                ok, result = False, "传入参数过多"
+                            else:
+                                if len(args) == 0:
+                                    ok, result = True, "\n".join(conf().keys())
+                                elif args[0] in conf().keys():
+                                    conf_str = ""
+                                    if isinstance(conf().get(args[0]), str):
+                                        conf_str = conf().get(args[0])
+                                    elif isinstance(conf().get(args[0]), dict):
+                                        conf_str = json.dumps(conf().get(args[0]))
+                                    elif isinstance(conf().get(args[0]), list):
+                                        conf_str = json.dumps(conf().get(args[0]))
+                                    else:
+                                        conf_str = str(conf().get(args[0]))
+                                    ok, result = True, conf_str
+                                else:
+                                    ok, result = False, "配置不存在"
+                        elif cmd == "setadminp":
+                            if len(args) != 1:
+                                ok, result = False, "请提供管理员认证密码"
+                            else:
+                                self.password = args[0]
+                                global_config["admin_users"].clear()
+                                ok, result = True, "操作成功"
+                        elif cmd == "setsuperp":
+                            if len(args) != 1:
+                                ok, result = False, "请提供超级管理员认证密码"
+                            else:
+                                self.super_password = args[0]
+                                global_config["super_admin_users"].clear()
+                                ok, result = True, "操作成功"
+                        elif cmd == "addgroupnamewhitelist":
+                            if len(args) != 1:
+                                ok, result = False, "请提供群组名"
+                            else:
+                                group_white_name_list = conf().get("group_name_white_list")
+                                if args[0] not in group_white_name_list:
+                                    group_white_name_list.append(args[0])
+                                conf().set("group_name_white_list", group_white_name_list)
+                                ok, result = True, "群组名白名单已添加"
+                        elif cmd == "delgroupnamewhitelist":
+                            if len(args) != 1:
+                                ok, result = False, "请提供群组名"
+                            else:
+                                group_white_name_list = conf().get("group_name_white_list")
+                                if args[0] in group_white_name_list:
+                                    group_white_name_list.remove(args[0])
+                                    conf().set("group_name_white_list", group_white_name_list)
+                                    ok, result = True, "群组名白名单已删除"
+                                else:
+                                    ok, result = False, "群组名白名单不存在"
+                        logger.debug("[Godcmd] super admin command: %s by %s" % (cmd, user))
                 else:
                     ok, result = False, "需要管理员权限才能执行该指令"
             else:
@@ -439,12 +782,15 @@ class Godcmd(Plugin):
         elif not self.isrunning:
             e_context.action = EventAction.BREAK_PASS
 
-    def authenticate(self, userid, args, isadmin, isgroup) -> Tuple[bool, str]:
+    def authenticate(self, userid, args, isadmin, isgroup, issuperadmin) -> Tuple[bool, str]:
         if isgroup:
             return False, "请勿在群聊中认证"
 
         if isadmin:
             return False, "管理员账号无需认证"
+
+        if issuperadmin:
+            return False, "超级管理员无需认证"
 
         if len(args) != 1:
             return False, "请提供口令"
@@ -458,11 +804,15 @@ class Godcmd(Plugin):
             self.admin_users.append(userid)
             global_config["admin_users"].append(userid)
             return True, "认证成功，请尽快设置口令"
+        elif password == self.super_password:
+            self.super_admin_users.append(userid)
+            global_config["super_admin_users"].append(userid)
+            return True, "认证成功"
         else:
             return False, "认证失败"
 
-    def get_help_text(self, isadmin=False, isgroup=False, **kwargs):
-        return get_help_text(isadmin, isgroup)
+    def get_help_text(self, isadmin=False, isgroup=False, issuperadmin=False, **kwargs):
+        return get_help_text(isadmin, isgroup, issuperadmin)
 
 
     def is_admin_in_group(self, context):
@@ -483,3 +833,7 @@ class Godcmd(Plugin):
                 self.password = gconf["password"]
             if gconf.get("admin_users"):
                 self.admin_users = gconf["admin_users"]
+            if gconf.get("super_password"):
+                self.super_password = gconf["super_password"]
+            if gconf.get("super_admin_users"):
+                self.super_admin_users = gconf["super_admin_users"]
