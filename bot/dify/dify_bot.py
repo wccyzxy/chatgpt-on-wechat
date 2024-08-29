@@ -71,7 +71,7 @@ class DIFYBot(Bot, OpenAIImage):
             response = requests.post(f"{self.dify_url if self.dify_url.endswith('/') else self.dify_url + '/'}chat-messages", headers=headers, json=args, timeout=30)
             data = response.json()
             logger.debug("[DIFYBOT] response data={}".format(data))
-            message = json.loads(data['answer'])['text']
+            message = data['answer']
             return {
                 "conversation_id": data["conversation_id"],
                 "code": 0,
