@@ -1,4 +1,5 @@
 # encoding:utf-8
+import json
 
 import requests
 
@@ -21,7 +22,7 @@ class DIFYBot(Bot, OpenAIImage):
         self.args = {
             "inputs": {},
             "response_mode": "blocking",
-            "conversation_id": f"{uuid.uuid4()}",
+            "conversation_id": "",
             "user": f"{uuid.uuid4()}",
             "files": [
             ]
@@ -70,7 +71,7 @@ class DIFYBot(Bot, OpenAIImage):
             response = requests.post(f"{self.dify_url if self.dify_url.endswith('/') else self.dify_url + '/'}chat-messages", headers=headers, json=args, timeout=30)
             data = response.json()
             logger.debug("[DIFYBOT] response data={}".format(data))
-            message = data['answer']
+            message = json.loads(data['answer'])['text']
             return {
                 "conversation_id": data["conversation_id"],
                 "code": 0,
