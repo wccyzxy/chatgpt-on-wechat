@@ -20,6 +20,7 @@ DIFY = "dify"
 RAG = "rag"
 SUMMARIZE = "summarize"
 COZE = "coze"
+DIFY = "dify"
 
 
 # model
