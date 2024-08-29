@@ -85,7 +85,7 @@ def create_bot(bot_type):
         return COZEBot()
 
     elif bot_type == const.DIFY:
-        from bot.dify.dify_bot import DifyBot
-        return DifyBot()
+        from bot.dify.dify_bot import DIFYBot
+        return DIFYBot()
 
     raise RuntimeError
